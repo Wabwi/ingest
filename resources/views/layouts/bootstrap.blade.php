@@ -7,6 +7,14 @@
 
     <title>{{ config('app.name', 'Ingest') }} - Track Your Health</title>
 
+    <!-- Theme Initializer -->
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
+
     <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,6 +183,97 @@
             backdrop-filter: blur(10px);
             color: var(--text-main);
         }
+
+        /* Light Mode Custom CSS Variables and Styling Overrides */
+        [data-bs-theme="light"] {
+            --bg-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --primary-accent: #4f46e5;
+            --primary-accent-glow: rgba(79, 70, 229, 0.08);
+            --poop-accent: #d97706;
+            --poop-accent-glow: rgba(217, 119, 6, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        [data-bs-theme="light"] body {
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(217, 119, 6, 0.03) 0px, transparent 50%) !important;
+        }
+
+        [data-bs-theme="light"] .glass-navbar {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-bs-theme="light"] .navbar-brand {
+            color: #0f172a !important;
+        }
+
+        [data-bs-theme="light"] .nav-link-custom {
+            color: #64748b !important;
+        }
+
+        [data-bs-theme="light"] .nav-link-custom:hover, 
+        [data-bs-theme="light"] .nav-link-custom.active {
+            color: #0f172a !important;
+            background: var(--primary-accent-glow) !important;
+        }
+
+        [data-bs-theme="light"] .form-control-custom {
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            color: #0f172a !important;
+        }
+
+        [data-bs-theme="light"] .form-control-custom:focus {
+            background: rgba(0, 0, 0, 0.04) !important;
+            border-color: var(--primary-accent) !important;
+        }
+
+        [data-bs-theme="light"] .list-group-item {
+            color: #0f172a !important;
+            border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        [data-bs-theme="light"] .timeline-card {
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+
+        [data-bs-theme="light"] .timeline-card:hover {
+            background: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        [data-bs-theme="light"] .timeline-container::before {
+            background: rgba(0, 0, 0, 0.06) !important;
+        }
+
+        [data-bs-theme="light"] .timeline-time {
+            color: #64748b !important;
+        }
+
+        [data-bs-theme="light"] .timeline-card p {
+            color: #334155 !important;
+        }
+
+        [data-bs-theme="light"] .text-white-50 {
+            color: #475569 !important;
+        }
+
+        [data-bs-theme="light"] .btn-outline-light {
+            color: #475569 !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        [data-bs-theme="light"] .btn-outline-light:hover {
+            background: rgba(0, 0, 0, 0.04) !important;
+            color: #0f172a !important;
+        }
+        [data-bs-theme="light"] .btn-close-white {
+            filter: invert(1) grayscale(1) brightness(0);
+        }
     </style>
     @yield('styles')
 </head>
@@ -204,6 +303,12 @@
                     </li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
+                    <!-- Theme Toggle Button -->
+                    <button type="button" id="themeToggle" class="btn btn-sm nav-link-custom border-0 py-2 px-3" title="Toggle Light/Dark Theme">
+                        <i class="bi bi-sun-fill" id="theme-icon"></i>
+                        <span id="theme-text" class="d-md-none"> Toggle Theme</span>
+                    </button>
+
                     <span class="text-muted d-none d-md-inline" style="font-size: 0.9rem;">
                         <i class="bi bi-person-fill-check"></i> {{ auth()->user()->name }}
                     </span>
@@ -270,6 +375,39 @@
 
     <!-- Bootstrap 5 JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Theme Toggle Handler Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function () {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeButton(newTheme);
+                });
+            }
+
+            function updateThemeButton(theme) {
+                const icon = document.getElementById('theme-icon');
+                const text = document.getElementById('theme-text');
+                if (icon) {
+                    if (theme === 'light') {
+                        icon.className = 'bi bi-moon-fill';
+                        if (text) text.textContent = ' Dark Mode';
+                    } else {
+                        icon.className = 'bi bi-sun-fill';
+                        if (text) text.textContent = ' Light Mode';
+                    }
+                }
+            }
+
+            // Initialize button icon on load
+            updateThemeButton(document.documentElement.getAttribute('data-bs-theme'));
+        });
+    </script>
     @yield('scripts')
 </body>
 </html>
