@@ -176,6 +176,33 @@
         [data-bs-theme="light"] header i {
             color: var(--primary-accent) !important;
         }
+
+        /* Responsive Brand Casing & Nav Header */
+        .navbar-brand-custom {
+            font-weight: 800;
+            font-size: 1.6rem;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        /* Mobile View UI adjustments for Header Buttons */
+        @media (max-width: 576px) {
+            .navbar-brand-custom {
+                font-size: 1.25rem !important;
+            }
+            header .btn-primary-custom, header .btn-outline-custom {
+                padding: 0.4rem 0.75rem !important;
+                font-size: 0.85rem !important;
+                white-space: nowrap !important;
+            }
+            .header-actions {
+                gap: 0.5rem !important;
+            }
+            .auth-buttons {
+                gap: 0.35rem !important;
+            }
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-h-screen justify-content-between">
@@ -183,18 +210,18 @@
     <!-- Header Navigation -->
     <header class="py-4">
         <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2" style="font-weight: 800; font-size: 1.6rem; letter-spacing: -0.5px;">
+            <a href="/" class="navbar-brand-custom d-flex align-items-center gap-2">
                 <i class="bi bi-heart-pulse-fill" style="color: var(--primary-accent);"></i>
                 <span>INGEST</span>
-            </div>
-            <div class="d-flex align-items-center gap-3">
+            </a>
+            <div class="header-actions d-flex align-items-center gap-3">
                 <!-- Theme Toggle Button -->
                 <button type="button" id="themeToggle" class="btn btn-sm btn-outline-custom border-0 py-2 px-3" title="Toggle Light/Dark Theme">
                     <i class="bi bi-sun-fill" id="theme-icon"></i>
                 </button>
 
                 @if (Route::has('login'))
-                    <div class="d-flex gap-2">
+                    <div class="auth-buttons d-flex gap-2">
                         @auth
                             <a href="{{ url('/dashboard') }}" class="btn-primary-custom py-2 px-4" style="border-radius: 10px;">Dashboard</a>
                         @else
