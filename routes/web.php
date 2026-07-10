@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TrackerController;
+use App\Http\Controllers\DeviceSetupController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -13,6 +14,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/meals', [TrackerController::class, 'storeMeal'])->name('meals.store');
     Route::post('/bowel-movements', [TrackerController::class, 'storeBowelMovement'])->name('bowel-movements.store');
     Route::get('/history', [TrackerController::class, 'history'])->name('history');
+    
+    // Offline setup routes
+    Route::get('/device-setup', [DeviceSetupController::class, 'index'])->name('device-setup.index');
+    Route::post('/device-setup/generate', [DeviceSetupController::class, 'generateCode'])->name('device-setup.generate');
 });
 
 Route::middleware('auth')->group(function () {

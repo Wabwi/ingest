@@ -301,6 +301,11 @@
                             <i class="bi bi-calendar2-week-fill"></i> Log History
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {{ request()->routeIs('device-setup.index') ? 'active' : '' }}" href="{{ route('device-setup.index') }}">
+                            <i class="bi bi-phone-fill"></i> Offline Setup
+                        </a>
+                    </li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <!-- Theme Toggle Button -->

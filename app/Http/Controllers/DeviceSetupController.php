@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Meal;
+use App\Models\BowelMovement;
+
+class DeviceSetupController extends Controller
+{
+    /**
+     * Display the device setup page on the web app.
+     */
+    public function index()
+    {
+        $user = auth()->user();
+        return view('device_setup', compact('user'));
+    }
+
+    /**
+     * Generate a new 6-digit numeric setup code for the user.
+     */
+    public function generateCode()
+    {
+        $user = auth()->user();
+        
+        // Generate a simple 6-digit numeric code for easy mobile entry
+        $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        
+        $user->update([
+            'device_setup_code' => $code,
+            'device_setup_expires_at' => Carbon::now()->addHours(2), // Valid for 2 hours
+        ]);
+
+        return redirect()->route('device-setup.index')->with('success', 'Setup code generated successfully!');
+    }
+
+    /**
+     * API: Verify the device setup code entered on the mobile app.
+     */
+    public function verifyCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        $user = User::where('device_setup_code', $request->code)
+            ->where('device_setup_expires_at', '>', Carbon::now())
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The code entered is invalid or has expired. Please generate a new code on the web app.'
+            ], 400);
+        }
+
+        // Generate an API token if the user doesn't have one
+        if (!$user->api_token) {
+            $user->api_token = Str::random(80);
+        }
+
+        // Consume the code so it cannot be used again
+        $user->device_setup_code = null;
+        $user->device_setup_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'password_hash' => $user->password, // Sent securely so local mobile DB can authenticate the user offline
+                'api_token' => $user->api_token,
+            ]
+        ]);
+    }
+
+    /**
+     * API: Sync/backup local logs from the mobile app to the web server.
+     */
+    public function syncData(Request $request)
+    {
+        $user = auth()->user();
+
+        $meals = $request->input('meals', []);
+        $bowelMovements = $request->input('bowel_movements', []);
+
+        $syncedMealUuids = [];
+        $syncedBmUuids = [];
+
+        // Sync Meals
+        foreach ($meals as $mealData) {
+            if (empty($mealData['uuid'])) {
+                continue;
+            }
+
+            // Prevent duplicate insertion by checking the unique uuid
+            $exists = Meal::where('uuid', $mealData['uuid'])->exists();
+
+            if (!$exists) {
+                $user->meals()->create([
+                    'uuid' => $mealData['uuid'],
+                    'meal_type' => $mealData['meal_type'],
+                    'description' => $mealData['description'],
+                    'eaten_at' => Carbon::parse($mealData['eaten_at']),
+                ]);
+            }
+            $syncedMealUuids[] = $mealData['uuid'];
+        }
+
+        // Sync Bowel Movements
+        foreach ($bowelMovements as $bmData) {
+            if (empty($bmData['uuid'])) {
+                continue;
+            }
+
+            // Prevent duplicate insertion by checking the unique uuid
+            $exists = BowelMovement::where('uuid', $bmData['uuid'])->exists();
+
+            if (!$exists) {
+                $user->bowelMovements()->create([
+                    'uuid' => $bmData['uuid'],
+                    'logged_at' => Carbon::parse($bmData['logged_at']),
+                    'bristol_type' => $bmData['bristol_type'],
+                    'notes' => $bmData['notes'] ?? null,
+                ]);
+            }
+            $syncedBmUuids[] = $bmData['uuid'];
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Synchronization complete.',
+            'synced_meals' => $syncedMealUuids,
+            'synced_bowel_movements' => $syncedBmUuids,
+        ]);
+    }
+}

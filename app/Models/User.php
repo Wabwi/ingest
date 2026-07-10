@@ -22,6 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'device_setup_code',
+        'device_setup_expires_at',
+        'api_token',
     ];
 
     /**
