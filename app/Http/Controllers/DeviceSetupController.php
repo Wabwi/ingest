@@ -132,11 +132,32 @@ class DeviceSetupController extends Controller
             $syncedBmUuids[] = $bmData['uuid'];
         }
 
+        // Fetch all of the user's meals and bowel movements (both existing and newly synced ones)
+        $allUserMeals = $user->meals()->get()->map(function ($meal) {
+            return [
+                'uuid' => $meal->uuid,
+                'meal_type' => $meal->meal_type,
+                'description' => $meal->description,
+                'eaten_at' => $meal->eaten_at->toIso8601String(),
+            ];
+        });
+
+        $allUserBm = $user->bowelMovements()->get()->map(function ($bm) {
+            return [
+                'uuid' => $bm->uuid,
+                'logged_at' => $bm->logged_at->toIso8601String(),
+                'bristol_type' => $bm->bristol_type,
+                'notes' => $bm->notes,
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Synchronization complete.',
             'synced_meals' => $syncedMealUuids,
             'synced_bowel_movements' => $syncedBmUuids,
+            'all_meals' => $allUserMeals,
+            'all_bowel_movements' => $allUserBm,
         ]);
     }
 }
