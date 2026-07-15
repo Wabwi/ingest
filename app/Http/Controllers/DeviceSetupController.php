@@ -98,15 +98,26 @@ class DeviceSetupController extends Controller
                 continue;
             }
 
-            // Prevent duplicate insertion by checking the unique uuid
-            $exists = Meal::where('uuid', $mealData['uuid'])->exists();
+            $meal = $user->meals()->withTrashed()->where('uuid', $mealData['uuid'])->first();
 
-            if (!$exists) {
+            if ($meal) {
+                if (!empty($mealData['deleted_at'])) {
+                    $meal->update(['deleted_at' => Carbon::parse($mealData['deleted_at'])]);
+                } else {
+                    $meal->update([
+                        'meal_type' => $mealData['meal_type'],
+                        'description' => $mealData['description'],
+                        'eaten_at' => Carbon::parse($mealData['eaten_at']),
+                        'deleted_at' => null, // restore if soft-deleted
+                    ]);
+                }
+            } else {
                 $user->meals()->create([
                     'uuid' => $mealData['uuid'],
                     'meal_type' => $mealData['meal_type'],
                     'description' => $mealData['description'],
                     'eaten_at' => Carbon::parse($mealData['eaten_at']),
+                    'deleted_at' => !empty($mealData['deleted_at']) ? Carbon::parse($mealData['deleted_at']) : null,
                 ]);
             }
             $syncedMealUuids[] = $mealData['uuid'];
@@ -118,21 +129,32 @@ class DeviceSetupController extends Controller
                 continue;
             }
 
-            // Prevent duplicate insertion by checking the unique uuid
-            $exists = BowelMovement::where('uuid', $bmData['uuid'])->exists();
+            $bm = $user->bowelMovements()->withTrashed()->where('uuid', $bmData['uuid'])->first();
 
-            if (!$exists) {
+            if ($bm) {
+                if (!empty($bmData['deleted_at'])) {
+                    $bm->update(['deleted_at' => Carbon::parse($bmData['deleted_at'])]);
+                } else {
+                    $bm->update([
+                        'bristol_type' => $bmData['bristol_type'],
+                        'notes' => $bmData['notes'] ?? null,
+                        'logged_at' => Carbon::parse($bmData['logged_at']),
+                        'deleted_at' => null, // restore if soft-deleted
+                    ]);
+                }
+            } else {
                 $user->bowelMovements()->create([
                     'uuid' => $bmData['uuid'],
-                    'logged_at' => Carbon::parse($bmData['logged_at']),
                     'bristol_type' => $bmData['bristol_type'],
                     'notes' => $bmData['notes'] ?? null,
+                    'logged_at' => Carbon::parse($bmData['logged_at']),
+                    'deleted_at' => !empty($bmData['deleted_at']) ? Carbon::parse($bmData['deleted_at']) : null,
                 ]);
             }
             $syncedBmUuids[] = $bmData['uuid'];
         }
 
-        // Fetch all of the user's meals and bowel movements (both existing and newly synced ones)
+        // Fetch all of the user's active meals and bowel movements
         $allUserMeals = $user->meals()->get()->map(function ($meal) {
             return [
                 'uuid' => $meal->uuid,
@@ -151,6 +173,10 @@ class DeviceSetupController extends Controller
             ];
         });
 
+        // Fetch all deleted UUIDs
+        $deletedMeals = $user->meals()->onlyTrashed()->pluck('uuid')->toArray();
+        $deletedBm = $user->bowelMovements()->onlyTrashed()->pluck('uuid')->toArray();
+
         return response()->json([
             'success' => true,
             'message' => 'Synchronization complete.',
@@ -158,6 +184,8 @@ class DeviceSetupController extends Controller
             'synced_bowel_movements' => $syncedBmUuids,
             'all_meals' => $allUserMeals,
             'all_bowel_movements' => $allUserBm,
+            'deleted_meals' => $deletedMeals,
+            'deleted_bowel_movements' => $deletedBm,
         ]);
     }
 }
